@@ -14,12 +14,13 @@ typedef struct
     unsigned int row, col; // Line numbers.
 } token;
 
-typedef struct linkedlist{
-	token item;
-	ll *next;
-}ll;
+typedef struct linkedlist
+{
+    token item;
+    ll *next;
+} ll;
 
-token gettoken(FILE *fp,ll list[],int *id)
+token gettoken(FILE *fp, ll list[], int *id)
 {
     static int i = 1, j = 1;
     int p = 0;
@@ -30,7 +31,10 @@ token gettoken(FILE *fp,ll list[],int *id)
     char key[10][10] = {"int", "float", "double", "break", "continue", "char", "long", "short", "return", "unsigned"};
     c = fgetc(fp);
     if (c == EOF)
-        exit(0);
+    {
+        temp.index = -2;
+        return temp;
+    }
     if (c == '#')
     {
         i++;
@@ -38,7 +42,6 @@ token gettoken(FILE *fp,ll list[],int *id)
             c = fgetc(fp);
         c = fgetc(fp);
     }
-
     while (c == ' ')
     {
         c = fgetc(fp);
@@ -52,7 +55,6 @@ token gettoken(FILE *fp,ll list[],int *id)
                 i++;
             j = 1;
             c = fgetc(fp);
-            printf("\n");
         }
     }
     while (c == ' ')
@@ -134,6 +136,7 @@ token gettoken(FILE *fp,ll list[],int *id)
         return temp;
     case ',':
         strcpy(temp.token_name, ",");
+        strcpy(temp.tokentype, ",");
         temp.index = -1;
         temp.row = i;
         temp.col = j;
@@ -228,6 +231,7 @@ token gettoken(FILE *fp,ll list[],int *id)
         {
             fseek(fp, -1, SEEK_CUR);
             strcpy(temp.token_name, key[x]);
+            strcpy(temp.tokentype, "keyword");
             temp.index = -1;
             temp.row = i;
             temp.col = j;
@@ -235,39 +239,43 @@ token gettoken(FILE *fp,ll list[],int *id)
             return temp;
         }
     }
-    
     if (buf[0] != '\0')
-    {	
-    	int x=strlen(buf)%10;
-    	ll *ptr;
-    	ptr=list;
-    	for(int o=1;o<x;o++)
-    		ptr++;
-    	
-    	int flag=0;
-    	
-    	while(ptr!=NULL){
-    		if(strcmp(ptr->item.token_name,buf)==0){
-    			flag=1;
-    			break;
-    		}
-    		ptr=ptr->next;
-    	}
-    
-    	if(c=='('){
-    		strcpy(temp.tokentype,"func");
-    	}
-    	else
-    		strcpy(temp.tokentype,"var");
-        fseek(fp, -1, SEEK_CUR);
-        if (flag==1)
-        	temp.index=ptr->item.index;
+    {
+        int x = strlen(buf) % 10;
+        ll *ptr;
+        ptr = (list + x);
+
+        int flag = 0;
+
+        while (ptr != NULL)
+        {
+
+            if (strcmp(ptr->item.token_name, buf) == 0)
+            {
+
+                flag = 1;
+                break;
+            }
+            ptr = ptr->next;
+        }
+
+        if (c == '(')
+        {
+            strcpy(temp.tokentype, "func");
+        }
         else
-        	temp.index = (*id)++;
+            strcpy(temp.tokentype, "var");
+        fseek(fp, -1, SEEK_CUR);
+        if (flag == 1)
+            temp.index = ptr->item.index;
+        else
+            temp.index = (*id)++;
+
         strcpy(temp.token_name, buf);
         temp.row = i;
         temp.col = j;
         j += strlen(buf);
+
         return temp;
     }
     if (c == '\"')
@@ -321,43 +329,110 @@ token gettoken(FILE *fp,ll list[],int *id)
         return temp;
     }
 }
-
 int main()
 {
     char c, buf[10];
-    int *id=(int*)malloc(sizeof(int));
-    *id=1;
+    token arr[50];
+    int num = 0, s = 0, count = 0;
+    int *id = (int *)malloc(sizeof(int));
+    *id = 1;
     FILE *fp = fopen("digit.c", "r");
     token t;
-    ll list[10];
+    ll *list = (ll *)malloc(10 * sizeof(ll));
     ll *temp;
     ll *ptr;
-    int p=0,flag=0;
+    int p = 0, flag = 0;
+    char key[10][10] = {"int", "float", "double", "char", "long", "short"};
     while (1)
     {
-    	int s=*id;
-        t = gettoken(fp,list,id);
-        
-        //printf("<%s,%d,%d>", t.token_name, t.row, t.col);
-        if(*id<=s){
-        	continue;
-        }
-        
-        int index=strlen(t.token_name)%10;
-        *ptr=list[index];
-       
-        while(ptr->next!=NULL){
-        	ptr=ptr->next;
-        }
+        t = gettoken(fp, list, id);
+        if (t.index == -2)
+            break;
+        if (strcmp(t.token_name, ";") == 0)
+        {
+            num = 0;
+            for (int y = 0; y <= count; y++)
+            {
 
-        temp=(ll*)malloc(sizeof(ll));
-        temp->item=t;
-        temp->next=NULL;
-        ptr->next=temp;
-        if(s<(*id)){
-        //printf("\n%d\t%s\t%s\t%s\t%s\t%d",t.index,t.token_name,t.returntype,t.datatype,t.tokentype,t.args);
-         printf("\n%d\t%s\t%s",t.index,t.token_name,t.tokentype);
+                for (int x = 0; x < 6; x++)
+                {
+
+                    if (strcmp(arr[y].token_name, key[x]) == 0)
+                    {
+                        strcpy(buf, arr[y].token_name);
+                    }
+                }
+                if ((strcmp(arr[y].tokentype, "var") == 0 || strcmp(arr[y].tokentype, "func") == 0) && arr[y].index >= s)
+                {
+
+                    int index = strlen(arr[y].token_name) % 10;
+                    ptr = list + index;
+
+                    while (ptr->next != NULL)
+                    {
+                        ptr = ptr->next;
+                    }
+
+                    temp = (ll *)malloc(sizeof(ll));
+                    temp->item = arr[y];
+
+                    temp->next = NULL;
+                    if (strcmp(arr[y].tokentype, "var") == 0)
+                    {
+                        strcpy(temp->item.returntype, "-");
+                        temp->item.args = -1;
+                        strcpy(temp->item.datatype, buf);
+                    }
+                    else
+                    {
+                        strcpy(temp->item.datatype, "-");
+                        int c = 0;
+                        for (int y = 0; y <= count; y++)
+                        {
+                            if (strcmp(arr[y].token_name, "(") == 0)
+                            {
+                                while (strcmp(arr[++y].token_name, ")") != 0)
+                                {
+                                    if (strcmp(arr[y].tokentype, "var") == 0)
+                                    {
+                                        c++;
+                                        puts(arr[y].token_name);
+                                    }
+                                }
+                            }
+                        }
+                        strcpy(temp->item.returntype, buf);
+
+                        temp->item.args = c;
+                    }
+                    ptr->next = temp;
+                    s++;
+                }
+            }
+        }
+        else
+        {
+            arr[num++] = t;
+            count = num;
+            continue;
+        }
     }
+    for (int x = 1; x < *id; x++)
+    {
+        for (int u = 0; u < 10; u++)
+        {
+
+            ptr = list + u;
+            while (ptr != NULL)
+            {
+                if (ptr->item.index == x)
+                {
+                    printf("\n%d\t%s\t%s\t%s\t%s\t%d", ptr->item.index, ptr->item.token_name, ptr->item.returntype, ptr->item.datatype, ptr->item.tokentype, ptr->item.args);
+                    break;
+                }
+                ptr = ptr->next;
+            }
+        }
     }
     return 0;
 }
