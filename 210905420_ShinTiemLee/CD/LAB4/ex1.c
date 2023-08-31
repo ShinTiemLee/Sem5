@@ -344,11 +344,16 @@ int main()
     int p = 0, flag = 0;
     char key[10][10] = {"int", "float", "double", "char", "long", "short"};
     while (1)
-    {
+    {   
         t = gettoken(fp, list, id);
         if (t.index == -2)
             break;
-        if (strcmp(t.token_name, ";") == 0)
+        flag=0;
+        if (strcmp(t.token_name, ";") == 0) 
+            flag=1;
+        if(strcmp(t.token_name, "{") == 0)
+           flag=1;
+        if(flag==1)  
         {
             num = 0;
             for (int y = 0; y <= count; y++)
@@ -382,30 +387,37 @@ int main()
                         strcpy(temp->item.returntype, "-");
                         temp->item.args = -1;
                         strcpy(temp->item.datatype, buf);
+                        ptr->next = temp;
                     }
-                    else
+                    else if(strcmp(arr[y].tokentype, "func") == 0)
                     {
                         strcpy(temp->item.datatype, "-");
-                        int c = 0;
+                       
                         for (int y = 0; y <= count; y++)
                         {
                             if (strcmp(arr[y].token_name, "(") == 0)
                             {
+                                 int co = 0;
                                 while (strcmp(arr[++y].token_name, ")") != 0)
                                 {
-                                    if (strcmp(arr[y].tokentype, "var") == 0)
+                                    if (strcmp(arr[y].tokentype, "var") == 0 || strcmp(arr[y].token_name,"str")==0)
                                     {
-                                        c++;
-                                        puts(arr[y].token_name);
+                                        co++;
+                                        
                                     }
+                                    
                                 }
+                               
+                                temp->item.args = co;
+                                strcpy(temp->item.returntype, buf);
+                                ptr->next = temp;
                             }
                         }
-                        strcpy(temp->item.returntype, buf);
+                        
 
-                        temp->item.args = c;
+                        
                     }
-                    ptr->next = temp;
+                    
                     s++;
                 }
             }
