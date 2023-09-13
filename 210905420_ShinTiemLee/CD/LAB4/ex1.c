@@ -1,450 +1,689 @@
 #include <stdio.h>
-#include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
-typedef struct linkedlist ll;
-typedef struct
+#include <string.h>
+
+typedef struct t
 {
-    char token_name[10];
+    char name[100];
+    char id[10];
+    int r;
+    int c;
+} TOKEN;
+
+typedef struct node
+{
     int index;
-    char datatype[10];
-    char tokentype[10];
-    char returntype[10];
-    int args;
-    unsigned int row, col; // Line numbers.
-} token;
+    char name[100];
+    char data_type[50];
+    char token_type[50];
+    char return_type[50];
+    int aug;
+    struct node *next;
+} NODE;
 
-typedef struct linkedlist
-{
-    token item;
-    ll *next;
-} ll;
+char keywords[][50] = {"void", "int", "float", "char", "double", "break", "if", "while", "do", "else", "continue", "static"};
 
-token gettoken(FILE *fp, ll list[], int *id)
+int hash(char buf[])
 {
-    static int i = 1, j = 1;
-    int p = 0;
-    token temp;
-    char c;
-    char buf[20];
-    buf[0] = '\0';
-    char key[10][10] = {"int", "float", "double", "break", "continue", "char", "long", "short", "return", "unsigned"};
-    c = fgetc(fp);
+    int i = 0, sum = 0;
+    while (buf[i] != '\0')
+    {
+        sum += buf[i];
+        i++;
+    }
+    return sum % 10;
+}
+int checklist(char buf[], char **list)
+{
+
+    if (!list[0])
+    {
+        list[0] = (char *)malloc(sizeof(char) * 50);
+        strcpy(list[0], buf);
+        return -1;
+    }
+    else
+    {
+        int p = 0;
+        while (list[p])
+        {
+            if (strcmp(list[p], buf) == 0)
+            {
+
+                return p + 1;
+            }
+            p++;
+        }
+
+        list[p] = (char *)malloc(sizeof(char) * 50);
+        strcpy(list[p], buf);
+        return -1;
+    }
+}
+
+int checkkey(char buf[])
+{
+    for (int p = 0; p < 12; p++)
+    {
+        if (strcmp(keywords[p], buf) == 0)
+        {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+int symboltable(NODE *ll[], TOKEN t[], int c)
+{
+    static int in = 1;
+    char buf[50];
+    for (int i = 0; i < c; i++)
+    {
+        if (t[i].name[0] == '\0' || strcmp(t[i].name, "symbol") == 0 || strcmp(t[i].name, "operator") == 0)
+            continue;
+        else if (strcmp(t[i].id, "str") == 0 || strcmp(t[i].id, "num") == 0)
+        {
+            continue;
+        }
+        else if (checkkey(t[i].name))
+        {
+            strcpy(buf, t[i].name);
+        }
+        else
+        {
+            int hashkey = hash(t[i].name);
+            NODE *ptr = ll[hashkey];
+            if (!ptr)
+            {
+                ptr = (NODE *)malloc(sizeof(NODE));
+                ptr->next = NULL;
+            }
+            else
+            {
+                while (ptr->next)
+                {
+                    if (strcmp(ptr->name, t[i].name) == 0)
+                    {
+                        break;
+                    }
+                    ptr = ptr->next;
+                }
+                if (strcmp(ptr->name, t[i].name) == 0)
+                    continue;
+            }
+
+            NODE *temp = (NODE *)malloc(sizeof(NODE));
+            temp->index = in++;
+            if (strcmp(t[i + 1].id, "(") == 0)
+            {
+                strcpy(temp->name, t[i].name);
+                strcpy(temp->return_type, buf);
+                strcpy(temp->token_type, "func");
+                strcpy(temp->data_type, "-");
+                int x = 1, count = 1;
+                if (strcmp(t[i + 1].id, ")") == 0)
+                    count = 0;
+                while (strcmp(t[i + x].id, ")") != 0)
+                {
+                    if (strcmp(t[i + x].id, ",") == 0)
+                        count++;
+                    x++;
+                }
+                temp->aug = count;
+                temp->next = NULL;
+                ptr->next = temp;
+            }
+            else
+            {
+                strcpy(temp->name, t[i].name);
+                strcpy(temp->return_type, "-");
+                strcpy(temp->token_type, "var");
+                strcpy(temp->data_type, buf);
+                temp->aug = -1;
+                temp->next = NULL;
+                ptr->next = temp;
+            }
+        }
+    }
+    return in - 1;
+}
+
+TOKEN getnexttoken(FILE *fa, char **list)
+{
+    char c, ca;
+    static int i = 1, j = 1, index = 1;
+    TOKEN temp;
+
+    c = fgetc(fa);
     if (c == EOF)
     {
-        temp.index = -2;
+        strcpy(temp.name, "EOF");
         return temp;
     }
+    // remove preprocessor directives
     if (c == '#')
     {
-        i++;
         while (c != '\n')
-            c = fgetc(fp);
-        c = fgetc(fp);
-    }
-    while (c == ' ')
-    {
-        c = fgetc(fp);
-        j++;
-    }
-    if (c == '\n' || c == 13)
-    {
-        while (c == '\n' || c == 13)
         {
-            if (c == '\n')
-                i++;
+            c = fgetc(fa);
+        }
+        i++;
+        j = 1;
+        temp.name[0] = '\0';
+        return temp;
+    }
+    // remove comments; operators:/=,/
+    if (c == '/')
+    {
+        ca = fgetc(fa);
+        if (ca == '/')
+        {
+            while (ca != '\n')
+            {
+                ca = fgetc(fa);
+            }
+            i++;
             j = 1;
-            c = fgetc(fp);
+            temp.name[0] = '\0';
+            return temp;
         }
-    }
-    while (c == ' ')
-    {
-        c = fgetc(fp);
-        j++;
-    }
-    switch (c)
-    {
-    case '(':
-        strcpy(temp.token_name, "(");
-        temp.index = -1;
-        temp.row = i;
-        temp.col = j;
-        j++;
-        return temp;
-    case ')':
-        strcpy(temp.token_name, ")");
-        temp.index = -1;
-        temp.row = i;
-        temp.col = j;
-        j++;
-        return temp;
-    case '{':
-        strcpy(temp.token_name, "{");
-        temp.index = -1;
-        temp.row = i;
-        temp.col = j;
-        j++;
-        return temp;
-    case '}':
-        strcpy(temp.token_name, "}");
-        temp.index = -1;
-        temp.row = i;
-        temp.col = j;
-        j++;
-        return temp;
-    case '[':
-        strcpy(temp.token_name, "[");
-        temp.index = -1;
-        temp.row = i;
-        temp.col = j;
-        j++;
-        return temp;
-    case ']':
-        strcpy(temp.token_name, "]");
-        temp.index = -1;
-        temp.row = i;
-        temp.col = j;
-        j++;
-        return temp;
-    case '*':
-        strcpy(temp.token_name, "*");
-        temp.index = -1;
-        temp.row = i;
-        temp.col = j;
-        j++;
-        return temp;
-    case '/':
-        strcpy(temp.token_name, "/");
-        temp.index = -1;
-        temp.row = i;
-        temp.col = j;
-        j++;
-        return temp;
-    case '%':
-        strcpy(temp.token_name, "%");
-        temp.index = -1;
-        temp.row = i;
-        temp.col = j;
-        j++;
-        return temp;
-    case ';':
-        strcpy(temp.token_name, ";");
-        temp.index = -1;
-        temp.row = i;
-        temp.col = j;
-        j++;
-        return temp;
-    case ',':
-        strcpy(temp.token_name, ",");
-        strcpy(temp.tokentype, ",");
-        temp.index = -1;
-        temp.row = i;
-        temp.col = j;
-        j++;
-        return temp;
-    case '=':
-        buf[p++] = c;
-        c = fgetc(fp);
-        if (c == '=')
+        else if (ca == '*')
         {
-            buf[p++] = c;
-            buf[p] = '\0';
+            while (c != '*')
+            {
+                c = fgetc(fa);
+                if (c == '\n')
+                {
+                    i++;
+                    j = 1;
+                }
+                if (c == '*')
+                {
+                    ca = fgetc(fa);
+                    if (ca == '/')
+                        break;
+                }
+            }
+            temp.name[0] = '\0';
+            return temp;
+        }
+        else if (ca == '=')
+        {
+            strcpy(temp.name, "operator");
+            strcpy(temp.id, "/=");
+            temp.r = i;
+            temp.c = j;
+            j += 2;
+            return temp;
         }
         else
         {
-            buf[p] = '\0';
-            fseek(fp, -1, SEEK_CUR);
-        }
-        strcpy(temp.token_name, buf);
-        temp.index = -1;
-        temp.row = i;
-        temp.col = j;
-        j += strlen(buf);
-        return temp;
-    case '>':
-        buf[p++] = c;
-        c = fgetc(fp);
-        if (c == '=')
-        {
-            buf[p++] = c;
-            buf[p] = '\0';
-        }
-        else
-        {
-            buf[p] = '\0';
-            fseek(fp, -1, SEEK_CUR);
-        }
-        strcpy(temp.token_name, buf);
-        temp.index = -1;
-        temp.row = i;
-        temp.col = j;
-        j += strlen(buf);
-        return temp;
-    case '<':
-        buf[p++] = c;
-        c = fgetc(fp);
-        if (c == '=')
-        {
-            buf[p++] = c;
-            buf[p] = '\0';
-        }
-        else
-        {
-            buf[p] = '\0';
-            fseek(fp, -1, SEEK_CUR);
-        }
-        strcpy(temp.token_name, buf);
-        temp.index = -1;
-        temp.row = i;
-        temp.col = j;
-        j += strlen(buf);
-        return temp;
-    case '!':
-        buf[p++] = c;
-        c = fgetc(fp);
-        if (c == '=')
-        {
-            buf[p++] = c;
-            buf[p] = '\0';
-        }
-        else
-        {
-            buf[p] = '\0';
-            fseek(fp, -1, SEEK_CUR);
-        }
-        strcpy(temp.token_name, buf);
-        temp.index = -1;
-        temp.row = i;
-        temp.col = j;
-        j += strlen(buf);
-        return temp;
-    }
-    while (isalpha(c))
-    {
-        buf[p++] = c;
-        c = fgetc(fp);
-    }
-    buf[p] = '\0';
-    for (int x = 0; x < 10; x++)
-    {
-        if (strcmp(buf, key[x]) == 0)
-        {
-            fseek(fp, -1, SEEK_CUR);
-            strcpy(temp.token_name, key[x]);
-            strcpy(temp.tokentype, "keyword");
-            temp.index = -1;
-            temp.row = i;
-            temp.col = j;
-            j += strlen(buf);
+            fseek(fa, -1, SEEK_CUR);
+            strcpy(temp.name, "operator");
+            strcpy(temp.id, "/");
+            temp.r = i;
+            temp.c = j;
+            j += 1;
             return temp;
         }
     }
-    if (buf[0] != '\0')
+
+    if (c == '\n' || c == '\r')
     {
-        int x = strlen(buf) % 10;
-        ll *ptr;
-        ptr = (list + x);
-
-        int flag = 0;
-
-        while (ptr != NULL)
-        {
-
-            if (strcmp(ptr->item.token_name, buf) == 0)
-            {
-
-                flag = 1;
-                break;
-            }
-            ptr = ptr->next;
-        }
-
-        if (c == '(')
-        {
-            strcpy(temp.tokentype, "func");
-        }
-        else
-            strcpy(temp.tokentype, "var");
-        fseek(fp, -1, SEEK_CUR);
-        if (flag == 1)
-            temp.index = ptr->item.index;
-        else
-            temp.index = (*id)++;
-
-        strcpy(temp.token_name, buf);
-        temp.row = i;
-        temp.col = j;
-        j += strlen(buf);
-
+        i++;
+        j = 1;
+        temp.name[0] = '\0';
         return temp;
     }
+    if (c == ' ')
+    {
+        j++;
+        temp.name[0] = '\0';
+        return temp;
+    }
+    // operators:==,=
+    if (c == '=')
+    {
+        ca = fgetc(fa);
+        if (ca == '=')
+        {
+            strcpy(temp.name, "operator");
+            strcpy(temp.id, "==");
+            temp.r = i;
+            temp.c = j;
+            j += 2;
+            return temp;
+        }
+        else
+        {
+            fseek(fa, -1, SEEK_CUR);
+            strcpy(temp.name, "operator");
+            strcpy(temp.id, "=");
+            temp.r = i;
+            temp.c = j;
+            j += 1;
+            return temp;
+        }
+    }
+    // operators:++,+=,+
+    if (c == '+')
+    {
+        ca = fgetc(fa);
+        if (ca == '+')
+        {
+            strcpy(temp.name, "operator");
+            strcpy(temp.id, "++");
+            temp.r = i;
+            temp.c = j;
+            j += 2;
+            return temp;
+        }
+        else if (ca == '=')
+        {
+            strcpy(temp.name, "operator");
+            strcpy(temp.id, "+=");
+            temp.r = i;
+            temp.c = j;
+            j += 2;
+            return temp;
+        }
+        else
+        {
+            fseek(fa, -1, SEEK_CUR);
+            strcpy(temp.name, "operator");
+            strcpy(temp.id, "+");
+            temp.r = i;
+            temp.c = j;
+            j += 1;
+            return temp;
+        }
+    }
+
+    // operators:--,-=,-
+    if (c == '-')
+    {
+        ca = fgetc(fa);
+        if (ca == '-')
+        {
+            strcpy(temp.name, "operator");
+            strcpy(temp.id, "--");
+            temp.r = i;
+            temp.c = j;
+            j += 2;
+            return temp;
+        }
+        else if (ca == '=')
+        {
+            strcpy(temp.name, "operator");
+            strcpy(temp.id, "-=");
+            temp.r = i;
+            temp.c = j;
+            j += 2;
+            return temp;
+        }
+        else
+        {
+            fseek(fa, -1, SEEK_CUR);
+            strcpy(temp.name, "operator");
+            strcpy(temp.id, "-");
+            temp.r = i;
+            temp.c = j;
+            j += 1;
+            return temp;
+        }
+    }
+    // operators:*,*=
+    if (c == '*')
+    {
+        ca = fgetc(fa);
+        if (ca == '=')
+        {
+            strcpy(temp.name, "operator");
+            strcpy(temp.id, "*=");
+            temp.r = i;
+            temp.c = j;
+            j += 2;
+            return temp;
+        }
+        else
+        {
+            fseek(fa, -1, SEEK_CUR);
+            strcpy(temp.name, "operator");
+            strcpy(temp.id, "*");
+            temp.r = i;
+            temp.c = j;
+            j += 1;
+            return temp;
+        }
+    }
+    // operators:|,||
+    if (c == '|')
+    {
+        ca = fgetc(fa);
+        if (ca == '|')
+        {
+            strcpy(temp.name, "operator");
+            strcpy(temp.id, "||");
+            temp.r = i;
+            temp.c = j;
+            j += 2;
+            return temp;
+        }
+        else
+        {
+            fseek(fa, -1, SEEK_CUR);
+            strcpy(temp.name, "operator");
+            strcpy(temp.id, "|");
+            temp.r = i;
+            temp.c = j;
+            j += 1;
+            return temp;
+        }
+    }
+    // operators:&,&&
+    if (c == '&')
+    {
+        ca = fgetc(fa);
+        if (ca == '&')
+        {
+            strcpy(temp.name, "operator");
+            strcpy(temp.id, "&&");
+            temp.r = i;
+            temp.c = j;
+            j += 2;
+            return temp;
+        }
+        else
+        {
+            fseek(fa, -1, SEEK_CUR);
+            strcpy(temp.name, "operator");
+            strcpy(temp.id, "&");
+            temp.r = i;
+            temp.c = j;
+            j += 1;
+            return temp;
+        }
+    }
+    // operators:%,%=
+    if (c == '%')
+    {
+        ca = fgetc(fa);
+        if (ca == '=')
+        {
+            strcpy(temp.name, "operator");
+            strcpy(temp.id, "%=");
+            temp.r = i;
+            temp.c = j;
+            j += 2;
+            return temp;
+        }
+        else
+        {
+            fseek(fa, -1, SEEK_CUR);
+            strcpy(temp.name, "operator");
+            strcpy(temp.id, "%");
+            temp.r = i;
+            temp.c = j;
+            j += 1;
+            return temp;
+        }
+    }
+    // operators:!,!=
+    if (c == '!')
+    {
+        ca = fgetc(fa);
+        if (ca == '=')
+        {
+            strcpy(temp.name, "operator");
+            strcpy(temp.id, "!=");
+            temp.r = i;
+            temp.c = j;
+            j += 2;
+            return temp;
+        }
+        else
+        {
+            fseek(fa, -1, SEEK_CUR);
+            strcpy(temp.name, "operator");
+            strcpy(temp.id, "!");
+            temp.r = i;
+            temp.c = j;
+            j += 1;
+            return temp;
+        }
+    }
+    // symbols
+    if (c == ',')
+    {
+        strcpy(temp.name, "symbol");
+        strcpy(temp.id, ",");
+        temp.r = i;
+        temp.c = j;
+        j += 1;
+        return temp;
+    }
+    if (c == ';')
+    {
+        strcpy(temp.name, "symbol");
+        strcpy(temp.id, ";");
+        temp.r = i;
+        temp.c = j;
+        j += 1;
+        return temp;
+    }
+    // brackets
+    if (c == '(')
+    {
+        strcpy(temp.name, "symbol");
+        strcpy(temp.id, "(");
+        temp.r = i;
+        temp.c = j;
+        j += 1;
+        return temp;
+    }
+    if (c == ')')
+    {
+        strcpy(temp.name, "symbol");
+        strcpy(temp.id, ")");
+        temp.r = i;
+        temp.c = j;
+        j += 1;
+        return temp;
+    }
+    if (c == '[')
+    {
+        strcpy(temp.name, "symbol");
+        strcpy(temp.id, "[");
+        temp.r = i;
+        temp.c = j;
+        j += 1;
+        return temp;
+    }
+    if (c == ']')
+    {
+        strcpy(temp.name, "symbol");
+        strcpy(temp.id, "]");
+        temp.r = i;
+        temp.c = j;
+        j += 1;
+        return temp;
+    }
+    if (c == '{')
+    {
+        strcpy(temp.name, "symbol");
+        strcpy(temp.id, "{");
+        temp.r = i;
+        temp.c = j;
+        j += 1;
+        return temp;
+    }
+    if (c == '}')
+    {
+        strcpy(temp.name, "symbol");
+        strcpy(temp.id, "}");
+        temp.r = i;
+        temp.c = j;
+        j += 1;
+        return temp;
+    }
+    // string
     if (c == '\"')
     {
+        char buf[100];
+        int p = 0;
         buf[p++] = c;
-        c = fgetc(fp);
+        c = fgetc(fa);
         while (c != '\"')
         {
             buf[p++] = c;
-            c = fgetc(fp);
+            c = fgetc(fa);
         }
+        buf[p++] = '\"';
         buf[p] = '\0';
-        strcpy(temp.token_name, "str");
-        temp.index = -1;
-        temp.row = i;
-        temp.col = j;
-        j += strlen(buf);
+        strcpy(temp.name, buf);
+        strcpy(temp.id, "str");
+        temp.r = i;
+        temp.c = j;
+        j += p;
         return temp;
     }
+
     if (c == '\'')
     {
+        char buf[100];
+        int p = 0;
         buf[p++] = c;
-        c = fgetc(fp);
+        c = fgetc(fa);
         while (c != '\'')
         {
             buf[p++] = c;
-            c = fgetc(fp);
-            buf[p] = '\0';
+            c = fgetc(fa);
         }
-        strcpy(temp.token_name, "str");
-        temp.index = -1;
-        temp.row = i;
-        temp.col = j;
-        j += strlen(buf);
+        buf[p++] = '\'';
+        buf[p] = '\0';
+        strcpy(temp.name, buf);
+        strcpy(temp.id, "str");
+        temp.r = i;
+        temp.c = j;
+        j += p;
         return temp;
     }
-    while (isdigit(c))
+
+    // numbers
+    if (isdigit(c))
     {
-        buf[p++] = c;
-        c = fgetc(fp);
+        char buf[50];
+        int p = 0;
+        while (isdigit(c) || c == '.')
+        {
+            if (isdigit(c))
+                buf[p++] = c + '0';
+            else
+                buf[p++] = c;
+            c = fgetc(fa);
+        }
+        buf[p] = '\0';
+        fseek(fa, -1, SEEK_CUR);
+        strcpy(temp.name, buf);
+        strcpy(temp.id, "num");
+        temp.r = i;
+        temp.c = j;
+        j += p;
+        return temp;
     }
-    buf[p] = '\0';
-    if (buf[0] != '\0')
+
+    // var,func
+    if (isalpha(c))
     {
-        fseek(fp, -1, SEEK_CUR);
-        strcpy(temp.token_name, "num");
-        temp.index = -1;
-        temp.row = i;
-        temp.col = j;
-        j += strlen(buf);
+        char buf[50];
+        int p = 0;
+        while (isalpha(c) || c == '_')
+        {
+            buf[p++] = c;
+            c = fgetc(fa);
+        }
+        buf[p] = '\0';
+
+        fseek(fa, -1, SEEK_CUR);
+        strcpy(temp.name, buf);
+        if (checkkey(buf))
+        {
+            strcpy(temp.id, buf);
+            temp.r = i;
+            temp.c = j;
+            j += p;
+            return temp;
+        }
+        int chk = checklist(temp.name, list);
+        if (chk != -1)
+            sprintf(temp.id, "id%d", chk);
+        else
+            sprintf(temp.id, "id%d", index++);
+        temp.r = i;
+        temp.c = j;
+        j += p;
         return temp;
     }
 }
-int main()
+
+void printtoken(TOKEN t[], int c)
 {
-    char c, buf[10];
-    token arr[50];
-    int num = 0, s = 0, count = 0;
-    int *id = (int *)malloc(sizeof(int));
-    *id = 1;
-    FILE *fp = fopen("digit.c", "r");
-    token t;
-    ll *list = (ll *)malloc(10 * sizeof(ll));
-    ll *temp;
-    ll *ptr;
-    int p = 0, flag = 0;
-    char key[10][10] = {"int", "float", "double", "char", "long", "short"};
-    while (1)
-    {   
-        t = gettoken(fp, list, id);
-        if (t.index == -2)
-            break;
-        flag=0;
-        if (strcmp(t.token_name, ";") == 0) 
-            flag=1;
-        if(strcmp(t.token_name, "{") == 0)
-           flag=1;
-        if(flag==1)  
-        {
-            num = 0;
-            for (int y = 0; y <= count; y++)
-            {
-
-                for (int x = 0; x < 6; x++)
-                {
-
-                    if (strcmp(arr[y].token_name, key[x]) == 0)
-                    {
-                        strcpy(buf, arr[y].token_name);
-                    }
-                }
-                if ((strcmp(arr[y].tokentype, "var") == 0 || strcmp(arr[y].tokentype, "func") == 0) && arr[y].index >= s)
-                {
-
-                    int index = strlen(arr[y].token_name) % 10;
-                    ptr = list + index;
-
-                    while (ptr->next != NULL)
-                    {
-                        ptr = ptr->next;
-                    }
-
-                    temp = (ll *)malloc(sizeof(ll));
-                    temp->item = arr[y];
-
-                    temp->next = NULL;
-                    if (strcmp(arr[y].tokentype, "var") == 0)
-                    {
-                        strcpy(temp->item.returntype, "-");
-                        temp->item.args = -1;
-                        strcpy(temp->item.datatype, buf);
-                        ptr->next = temp;
-                    }
-                    else if(strcmp(arr[y].tokentype, "func") == 0)
-                    {
-                        strcpy(temp->item.datatype, "-");
-                       
-                        for (int y = 0; y <= count; y++)
-                        {
-                            if (strcmp(arr[y].token_name, "(") == 0)
-                            {
-                                 int co = 0;
-                                while (strcmp(arr[++y].token_name, ")") != 0)
-                                {
-                                    if (strcmp(arr[y].tokentype, "var") == 0 || strcmp(arr[y].token_name,"str")==0)
-                                    {
-                                        co++;
-                                        
-                                    }
-                                    
-                                }
-                               
-                                temp->item.args = co;
-                                strcpy(temp->item.returntype, buf);
-                                ptr->next = temp;
-                            }
-                        }
-                        
-
-                        
-                    }
-                    
-                    s++;
-                }
-            }
-        }
-        else
-        {
-            arr[num++] = t;
-            count = num;
-            continue;
-        }
-    }
-    for (int x = 1; x < *id; x++)
+    for (int i = 0; i < c; i++)
     {
-        for (int u = 0; u < 10; u++)
+        if (i != 0)
+        {
+            if (t[i - 1].r != t[i].r)
+                printf("\n");
+        }
+        printf("<%s,%d,%d>", t[i].id, t[i].r, t[i].c);
+    }
+}
+
+void printsymboltable(NODE *ll[], int k)
+{
+    printf("\n| Index | Lexeme name | Return type |   Data type |  Token type | Number of args|\n");
+    NODE *ptr;
+    for (int i = 1; i <= k; i++)
+    {
+        for (int j = 0; j < 10; j++)
         {
 
-            ptr = list + u;
-            while (ptr != NULL)
+            ptr = ll[j];
+            while (ptr)
             {
-                if (ptr->item.index == x)
+                if (ptr->index == i)
                 {
-                    printf("\n%d\t%s\t%s\t%s\t%s\t%d", ptr->item.index, ptr->item.token_name, ptr->item.returntype, ptr->item.datatype, ptr->item.tokentype, ptr->item.args);
-                    break;
+                    printf("%d\t\t%s\t\t%s\t\t%s\t\t%s\t\t%d\n", ptr->index, ptr->name, ptr->return_type, ptr->data_type, ptr->token_type, ptr->aug);
                 }
                 ptr = ptr->next;
             }
         }
     }
-    return 0;
+}
+
+int main()
+{
+    char **list = (char **)malloc(50 * sizeof(char *));
+    TOKEN t[200];
+    TOKEN temp;
+    int c = 0;
+    FILE *fa = fopen("digit.c", "r");
+    temp = getnexttoken(fa, list);
+    while (strcmp(temp.name, "EOF") != 0)
+    {
+        if (temp.name[0] != '\0')
+        {
+            t[c++] = temp;
+        }
+        temp = getnexttoken(fa, list);
+    }
+    printtoken(t, c);
+    NODE *ll[10];
+    for (int i = 0; i < 10; i++)
+    {
+        ll[i] = (NODE *)malloc(sizeof(NODE));
+    }
+    int k = symboltable(ll, t, c);
+    printsymboltable(ll, k);
 }
