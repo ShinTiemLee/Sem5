@@ -23,17 +23,16 @@ typedef struct node
 } NODE;
 
 TOKEN t[500];
-int c=0;
+int c = 0;
 void invalid()
 {
-printf("-----------------ERROR!----------------\n");
-
+    printf("-----------------ERROR!----------------\n");
 }
 
 void valid()
 {
-printf("----------------SUCCESS!---------------\n");
-exit(0);
+    printf("----------------SUCCESS!---------------\n");
+    exit(0);
 }
 void Program();
 void declarations();
@@ -42,145 +41,176 @@ void identifier_list_prime();
 void assign_stat();
 void assign_stat_prime();
 void data_type();
-TOKEN getnexttoken(FILE* fa);
+TOKEN getnexttoken(FILE *fa);
 
-void Program(){
-    if(strcmp(t[c++].name,"main")==0){
-        
-        if(strcmp(t[c++].id,"(")==0){
-            if(strcmp(t[c++].id,")")==0){
-                if(strcmp(t[c++].id,"{")==0){
+void Program()
+{
+    if (strcmp(t[c++].name, "main") == 0)
+    {
+
+        if (strcmp(t[c++].id, "(") == 0)
+        {
+            if (strcmp(t[c++].id, ")") == 0)
+            {
+                if (strcmp(t[c++].id, "{") == 0)
+                {
                     declarations();
+
                     assign_stat();
-                    
-                    if(strcmp(t[c++].id,"}")==0){
-                        
-                        if(strcmp(t[c++].name,"EOF")==0)
+
+                    if (strcmp(t[c++].id, "}") == 0)
+                    {
+
+                        if (strcmp(t[c++].name, "EOF") == 0)
                             valid();
-                        else{
+                        else
+                        {
                             invalid();
-                            printf("row:%d col:%d\t Expected: EOF",t[c-1].r,t[c-1].c);
-                            exit(0);
-                        }
-
-
-                         }
-                         else{
-                            invalid();
-                            printf("row:%d col:%d\t Expected: }",t[c-1].r,t[c-1].c);
+                            printf("row:%d col:%d\t Expected: EOF", t[c - 1].r, t[c - 1].c);
                             exit(0);
                         }
                     }
-                    else{
-                            invalid();
-                            printf("row:%d col:%d\t Expected: {",t[c-1].r,t[c-1].c);
-                            exit(0);
-                        }
-            }
-            else{
+                    else
+                    {
+                        invalid();
+                        printf("row:%d col:%d\t Expected: }", t[c - 1].r, t[c - 1].c);
+                        exit(0);
+                    }
+                }
+                else
+                {
                     invalid();
-                    printf("row:%d col:%d\t Expected: )",t[c-1].r,t[c-1].c);
+                    printf("row:%d col:%d\t Expected: {", t[c - 1].r, t[c - 1].c);
                     exit(0);
-                        }
-        }
-        else{
+                }
+            }
+            else
+            {
                 invalid();
-                 printf("row:%d col:%d\t Expected: (",t[c-1].r,t[c-1].c);
-                 exit(0);
-                        }
-    }
-    else{
-            invalid();
-            printf("row:%d col:%d\t Expected: main",t[c-1].r,t[c-1].c);
-            exit(0);
-                        }
-}
-
-
-void declarations(){
-   data_type();
-   identifier_list();
-   /*if(strcmp(t[c++].id,";")==0){
-    declarations();
-   }
-   else{
-    invalid();
-    printf("row:%d col:%d\t Expected: ;",t[c-1].r,t[c-1].c);
-    exit(0);
-   }*/
-
-}
-
-void identifier_list(){
-    if(strcmp(t[c++].id,"id")==0){
-        identifier_list_prime();
-    }
-    else{
-    invalid();
-    printf("row:%d col:%d\t Expected: id",t[c-1].r,t[c-1].c);
-    //printf("%s",t[c-1].name);
-    exit(0);
-   }
-}
-
-void identifier_list_prime(){
-
-    if(strcmp(t[c++].id,",")==0){
-        identifier_list();
-    }
-    else{
-    c--;
-   }
-}
-
-void assign_stat(){
-    if(strcmp(t[c++].id,"id")==0){
-        
-        if(strcmp(t[c-1].id,"=")==0)
-            assign_stat_prime();
-        else{
-            invalid();
-            printf("row:%d col:%d\t Expected: =",t[c-1].r,t[c-1].c);
-            exit(0);
+                printf("row:%d col:%d\t Expected: )", t[c - 1].r, t[c - 1].c);
+                exit(0);
             }
-    }
-    else{
-    invalid();
-    printf("row:%d col:%d\t Expected: id",t[c-1].r,t[c-1].c);
-    //printf("%s",t[c-1].name);
-    exit(0);
-   }
-}
-
-void assign_stat_prime(){
-
-    if(strcmp(t[c].id,"id")==0 || strcmp(t[c].id,"num")==0){
-        c++;
-        if(strcmp(t[c++].id,";")!=0){
+        }
+        else
+        {
             invalid();
-            printf("row:%d col:%d\t Expected: ;",t[c-1].r,t[c-1].c);
+            printf("row:%d col:%d\t Expected: (", t[c - 1].r, t[c - 1].c);
             exit(0);
-            }
+        }
     }
-    else{
-    invalid();
-    printf("row:%d col:%d\t Expected: id or num",t[c].r,t[c].c);
-    exit(0);
-   }
-}
-
-void data_type(){
-    if(strcmp(t[c].id,"int")!=0 && strcmp(t[c].id,"char")!=0){
+    else
+    {
         invalid();
-        printf("row:%d col:%d\t Expected: int or char",t[c].r,t[c].c);
-       // printf("%s %s",t[c].name,t[c].id);
+        printf("row:%d col:%d\t Expected: main", t[c - 1].r, t[c - 1].c);
         exit(0);
     }
-    else{
-        c++;
+}
+
+void declarations()
+{
+    if (strcmp(t[c].id, "int") == 0 || strcmp(t[c].id, "char") == 0)
+    {
+        data_type();
+        identifier_list();
+        if (strcmp(t[c++].id, ";") == 0)
+        {
+            declarations();
+        }
+        else
+        {
+            invalid();
+            printf("row:%d col:%d\t Expected: ;", t[c - 1].r, t[c - 1].c);
+            exit(0);
+        }
     }
 }
 
+void identifier_list()
+{
+    if (strcmp(t[c++].id, "id") == 0)
+    {
+        identifier_list_prime();
+    }
+    else
+    {
+        invalid();
+        printf("row:%d col:%d\t Expected: id", t[c - 1].r, t[c - 1].c);
+        // printf("%s",t[c-1].name);
+        exit(0);
+    }
+}
+
+void identifier_list_prime()
+{
+
+    if (strcmp(t[c++].id, ",") == 0)
+    {
+        identifier_list();
+    }
+    else
+    {
+        c--;
+    }
+}
+
+void assign_stat()
+{
+    if (strcmp(t[c++].id, "id") == 0)
+    {
+
+        if (strcmp(t[c++].id, "=") == 0)
+            assign_stat_prime();
+        else
+        {
+            invalid();
+            printf("row:%d col:%d\t Expected: =", t[c - 1].r, t[c - 1].c);
+            exit(0);
+        }
+    }
+    else
+    {
+        invalid();
+        printf("row:%d col:%d\t Expected: id", t[c - 1].r, t[c - 1].c);
+        // printf("%s",t[c-1].name);
+        exit(0);
+    }
+}
+
+void assign_stat_prime()
+{
+
+    if (strcmp(t[c].id, "id") == 0 || strcmp(t[c].id, "num") == 0)
+    {
+        c++;
+        if (strcmp(t[c++].id, ";") != 0)
+        {
+            invalid();
+            printf("row:%d col:%d\t Expected: ;", t[c - 1].r, t[c - 1].c);
+            exit(0);
+        }
+    }
+    else
+    {
+        invalid();
+        printf("row:%d col:%d\t Expected: id or num", t[c].r, t[c].c);
+        exit(0);
+    }
+}
+
+void data_type()
+{
+    if (strcmp(t[c].id, "int") != 0 && strcmp(t[c].id, "char") != 0)
+    {
+        invalid();
+        printf("row:%d col:%d\t Expected: int or char", t[c].r, t[c].c);
+        // printf("%s %s",t[c].name,t[c].id);
+        exit(0);
+    }
+    else
+    {
+        c++;
+    }
+}
 
 char keywords[][50] = {"void", "int", "float", "char", "double", "break", "if", "while", "do", "else", "continue", "static"};
 
@@ -737,10 +767,7 @@ TOKEN getnexttoken(FILE *fa)
         int p = 0;
         while (isdigit(c) || c == '.')
         {
-            if (isdigit(c))
-                buf[p++] = c + '0';
-            else
-                buf[p++] = c;
+            buf[p++] = c;
             c = fgetc(fa);
         }
         buf[p] = '\0';
@@ -775,9 +802,9 @@ TOKEN getnexttoken(FILE *fa)
             j += p;
             return temp;
         }
-        
+
         strcpy(temp.id, "id");
-        
+
         temp.r = i;
         temp.c = j;
         j += p;
@@ -821,7 +848,8 @@ void printsymboltable(NODE *ll[], int k)
 }
 
 int main()
-{   TOKEN temp;
+{
+    TOKEN temp;
     FILE *fa = fopen("input.c", "r");
     temp = getnexttoken(fa);
     while (strcmp(temp.name, "EOF") != 0)
@@ -832,7 +860,7 @@ int main()
         }
         temp = getnexttoken(fa);
     }
-    c=0;
+    t[c] = temp;
+    c = 0;
     Program(t);
-    
 }
