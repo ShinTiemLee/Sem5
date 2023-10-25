@@ -162,20 +162,24 @@ void identifier_list_prime()
         c++;
         identifier_list();
     }
-    else if(strcmp(t[c].id,"[")==0)
+    else if (strcmp(t[c].id, "[") == 0)
     {
         c++;
-        if(strcmp(t[c++].id,"num")==0){
-            if(strcmp(t[c++].id,"]")==0){
+        if (strcmp(t[c++].id, "num") == 0)
+        {
+            if (strcmp(t[c++].id, "]") == 0)
+            {
                 identifier_list_prime2();
             }
-            else{
+            else
+            {
                 invalid();
                 printf("row:%d col:%d\t Expected: ]", t[c - 1].r, t[c - 1].c);
                 exit(0);
             }
         }
-        else{
+        else
+        {
             invalid();
             printf("row:%d col:%d\t Expected: num", t[c - 1].r, t[c - 1].c);
             exit(0);
@@ -192,47 +196,51 @@ void identifier_list_prime2()
     }
 }
 
-void statement_list(){
-    if(strcmp(t[c].id,"id")==0 || strcmp(t[c].id,"if")==0 || strcmp(t[c].id,"for")==0 || strcmp(t[c].id,"while")==0){
+void statement_list()
+{
+    if (strcmp(t[c].id, "id") == 0 || strcmp(t[c].id, "if") == 0 || strcmp(t[c].id, "for") == 0 || strcmp(t[c].id, "while") == 0)
+    {
         statement();
         statement_list();
     }
-    
 }
 
-void statement(){
-     if (strcmp(t[c].id, "id") == 0){
+void statement()
+{
+    if (strcmp(t[c].id, "id") == 0)
+    {
         assign_stat();
-        if(strcmp(t[c].id,";")==0){
+        if (strcmp(t[c].id, ";") == 0)
+        {
             c++;
         }
-        else{
-        invalid();
-        printf("row:%d col:%d\t Expected: ;", t[c - 1].r, t[c - 1].c);
-        exit(0);
+        else
+        {
+            invalid();
+            printf("row:%d col:%d\t Expected: ;", t[c - 1].r, t[c - 1].c);
+            exit(0);
+        }
     }
-    }
-    else if(strcmp(t[c].id,"if")==0){
+    else if (strcmp(t[c].id, "if") == 0)
+    {
         decision_stat();
     }
-    else if(strcmp(t[c].id,"for")==0 || strcmp(t[c].id,"while")==0){
+    else if (strcmp(t[c].id, "for") == 0 || strcmp(t[c].id, "while") == 0)
+    {
         looping_stat();
+    }
 }
-    
-}
-
 
 void assign_stat()
 {
     if (strcmp(t[c++].id, "id") == 0)
     {
-        printf("row:%d col:%d\t Expected: %s", t[c - 1].r, t[c - 1].c,t[c-1].name);
         if (strcmp(t[c++].id, "=") == 0)
             expn();
         else
         {
             invalid();
-            printf("%s",t[c].name);
+            printf("%s", t[c - 1].id);
             printf("row:%d col:%d\t Expected: =", t[c - 1].r, t[c - 1].c);
             exit(0);
         }
@@ -260,76 +268,91 @@ void data_type()
     }
 }
 
-void expn(){
+void expn()
+{
     simple_exp();
     eprime();
 }
 
-void eprime(){
-    if(strcmp(t[c].name,"roperator")==0){
+void eprime()
+{
+    if (strcmp(t[c].name, "roperator") == 0)
+    {
         relop();
         simple_exp();
     }
 }
 
-void simple_exp(){
+void simple_exp()
+{
     term();
     seprime();
 }
 
-void seprime(){
-    if(strcmp(t[c].id,"+")==0 || strcmp(t[c].id,"-")==0){
+void seprime()
+{
+    if (strcmp(t[c].id, "+") == 0 || strcmp(t[c].id, "-") == 0)
+    {
         addop();
         term();
         seprime();
     }
 }
 
-void term(){
+void term()
+{
     factor();
     tprime();
 }
 
-void tprime(){
-    if(strcmp(t[c].id,"*")==0 || strcmp(t[c].id,"/")==0 || strcmp(t[c].id,"%")==0){
+void tprime()
+{
+    if (strcmp(t[c].id, "*") == 0 || strcmp(t[c].id, "/") == 0 || strcmp(t[c].id, "%") == 0)
+    {
         mulop();
         factor();
         tprime();
     }
 }
 
-void factor(){
-    if(strcmp(t[c].id,"id")==0 || strcmp(t[c].id,"num")==0)
+void factor()
+{
+    if (strcmp(t[c].id, "id") == 0 || strcmp(t[c].id, "num") == 0)
         c++;
-    else{
+    else
+    {
         invalid();
         printf("row:%d col:%d\t Expected: id or num", t[c].r, t[c].c);
         exit(0);
-    }      
+    }
 }
 
-void relop(){
-    if(strcmp(t[c].id,"==")==0)
+void relop()
+{
+    if (strcmp(t[c].id, "==") == 0)
         c++;
-    else if(strcmp(t[c].id,"!=")==0)
+    else if (strcmp(t[c].id, "!=") == 0)
         c++;
-    else if(strcmp(t[c].id,"<")==0)
-        c++;  
-    else if(strcmp(t[c].id,">")==0)
+    else if (strcmp(t[c].id, "<") == 0)
         c++;
-    else if(strcmp(t[c].id,">=")==0)
+    else if (strcmp(t[c].id, ">") == 0)
         c++;
-    else if(strcmp(t[c].name,"<=")==0)
+    else if (strcmp(t[c].id, ">=") == 0)
         c++;
-    else{
+    else if (strcmp(t[c].name, "<=") == 0)
+        c++;
+    else
+    {
         invalid();
         printf("row:%d col:%d\t Expected: relational operator", t[c].r, t[c].c);
         exit(0);
     }
 }
 
-void addop(){
-    if(strcmp(t[c].id,"+")!=0 && strcmp(t[c].id,"-")!=0){
+void addop()
+{
+    if (strcmp(t[c].id, "+") != 0 && strcmp(t[c].id, "-") != 0)
+    {
         invalid();
         printf("row:%d col:%d\t Expected: + or -", t[c].r, t[c].c);
     }
@@ -337,136 +360,163 @@ void addop(){
         c++;
 }
 
-void mulop(){
-    if(strcmp(t[c].id,"*")!=0 && strcmp(t[c].id,"/")!=0 && strcmp(t[c].id,"%")!=0){
+void mulop()
+{
+    if (strcmp(t[c].id, "*") != 0 && strcmp(t[c].id, "/") != 0 && strcmp(t[c].id, "%") != 0)
+    {
         invalid();
         printf("row:%d col:%d\t Expected: * or / or modulus", t[c].r, t[c].c);
     }
     else
         c++;
-
 }
 
-void decision_stat(){
-    if(strcmp(t[c++].id,"if")==0){
-       if(strcmp(t[c++].id,"(")==0){
+void decision_stat()
+{
+    if (strcmp(t[c++].id, "if") == 0)
+    {
+        if (strcmp(t[c++].id, "(") == 0)
+        {
             expn();
-            if(strcmp(t[c++].id,")")==0){
-                if(strcmp(t[c++].id,"{")==0){
+            if (strcmp(t[c++].id, ")") == 0)
+            {
+                if (strcmp(t[c++].id, "{") == 0)
+                {
                     statement_list();
-                    if(strcmp(t[c++].id,"}")!=0){
+                    if (strcmp(t[c++].id, "}") != 0)
+                    {
                         invalid();
-                    printf("row:%d col:%d\t Expected: }", t[c-1].r, t[c-1].c);
-                    exit(0);
-                  }
-                    //if(strcmp(t[c++].id,"}")==0){
-                        //dprime();
-                  // } 
-                   //else{
-                   // invalid();
-                    //printf("row:%d col:%d\t Expected: }", t[c-1].r, t[c-1].c);
-                    //exit(0);
-                   //} 
-               } 
-               else{
-                invalid();
-                printf("row:%d col:%d\t Expected: {", t[c-1].r, t[c-1].c);
-                exit(0);
-               } 
-           } 
-           else{
-            invalid();
-            printf("row:%d col:%d\t Expected: )", t[c-1].r, t[c-1].c);
-            exit(0);
-           } }
-       else{
-        invalid();
-        printf("row:%d col:%d\t Expected: (", t[c-1].r, t[c-1].c);
-        exit(0);
-    }
-    }
-    else{
-        invalid();
-        printf("row:%d col:%d\t Expected: if", t[c-1].r, t[c-1].c);
-        exit(0);
-    }
-}
-
-void looping_stat(){
-    if(strcmp(t[c].id,"while")==0){
-        c++;
-           if(strcmp(t[c++].id,"(")==0){
-            expn();
-            if(strcmp(t[c++].id,")")==0){
-                if(strcmp(t[c++].id,"{")==0){
-                    statement_list();
-                    if(strcmp(t[c++].id,"}")!=0){
+                        printf("row:%d col:%d\t Expected: }", t[c - 1].r, t[c - 1].c);
+                        exit(0);
+                    }
+                    // if(strcmp(t[c++].id,"}")==0){
+                    // dprime();
+                    // }
+                    // else{
+                    // invalid();
+                    // printf("row:%d col:%d\t Expected: }", t[c-1].r, t[c-1].c);
+                    // exit(0);
+                    //}
+                }
+                else
+                {
                     invalid();
-                    printf("row:%d col:%d\t Expected: }", t[c-1].r, t[c-1].c);
-                    exit(0);
-                   }
-               } 
-               else{
-                invalid();
-                printf("row:%d col:%d\t Expected: {", t[c-1].r, t[c-1].c);
-                exit(0);
-               } 
-           } 
-           else{
-            invalid();
-            printf("row:%d col:%d\t Expected: )", t[c-1].r, t[c-1].c);
-            exit(0);
-           } }
-       else{
-        invalid();
-        printf("row:%d col:%d\t Expected: (", t[c-1].r, t[c-1].c);
-        exit(0);
-    }
-}
-   else if(strcmp(t[c].id,"for")==0){
-    c++;
-        if(strcmp(t[c++].id,"(")==0){
-            assign_stat();
-            if(strcmp(t[c++].id,";")==0){
-                expn();
-                if(strcmp(t[c++].id,";")==0){
-                assign_stat();
-                if(strcmp(t[c++].id,")")!=0){
-                    invalid();
-                    printf("row:%d col:%d\t Expected: )", t[c-1].r, t[c-1].c);
+                    printf("row:%d col:%d\t Expected: {", t[c - 1].r, t[c - 1].c);
                     exit(0);
                 }
-                
             }
-            else{
-        invalid();
-        printf("row:%d col:%d\t Expected: ;", t[c-1].r, t[c-1].c);
-        exit(0);
+            else
+            {
+                invalid();
+                printf("row:%d col:%d\t Expected: )", t[c - 1].r, t[c - 1].c);
+                exit(0);
+            }
         }
-            }
-            else{
-        invalid();
-        printf("row:%d col:%d\t Expected: ;", t[c-1].r, t[c-1].c);
-        exit(0);
+        else
+        {
+            invalid();
+            printf("row:%d col:%d\t Expected: (", t[c - 1].r, t[c - 1].c);
+            exit(0);
         }
     }
-         else{
+    else
+    {
         invalid();
-        printf("row:%d col:%d\t Expected: (", t[c-1].r, t[c-1].c);
+        printf("row:%d col:%d\t Expected: if", t[c - 1].r, t[c - 1].c);
         exit(0);
     }
-
-
-
-   }
-   else{
-    invalid();
-    printf("row:%d col:%d\t Expected: while or for", t[c].r, t[c].c);
-    exit(0);
-   } 
 }
 
-char keywords[][50] = {"void", "int", "float", "char", "double", "break", "if", "while", "do", "else", "continue", "static"};
+void looping_stat()
+{
+    if (strcmp(t[c].id, "while") == 0)
+    {
+        c++;
+        if (strcmp(t[c++].id, "(") == 0)
+        {
+            expn();
+            if (strcmp(t[c++].id, ")") == 0)
+            {
+                if (strcmp(t[c++].id, "{") == 0)
+                {
+                    statement_list();
+                    if (strcmp(t[c++].id, "}") != 0)
+                    {
+                        invalid();
+                        printf("row:%d col:%d\t Expected: }", t[c - 1].r, t[c - 1].c);
+                        exit(0);
+                    }
+                }
+                else
+                {
+                    invalid();
+                    printf("row:%d col:%d\t Expected: {", t[c - 1].r, t[c - 1].c);
+                    exit(0);
+                }
+            }
+            else
+            {
+                invalid();
+                printf("row:%d col:%d\t Expected: )", t[c - 1].r, t[c - 1].c);
+                exit(0);
+            }
+        }
+        else
+        {
+            invalid();
+            printf("row:%d col:%d\t Expected: (", t[c - 1].r, t[c - 1].c);
+            exit(0);
+        }
+    }
+    else if (strcmp(t[c].id, "for") == 0)
+    {
+        c++;
+        if (strcmp(t[c++].id, "(") == 0)
+        {
+            assign_stat();
+            if (strcmp(t[c++].id, ";") == 0)
+            {
+                expn();
+                if (strcmp(t[c++].id, ";") == 0)
+                {
+                    assign_stat();
+                    if (strcmp(t[c++].id, ")") != 0)
+                    {
+                        invalid();
+                        printf("row:%d col:%d\t Expected: )", t[c - 1].r, t[c - 1].c);
+                        exit(0);
+                    }
+                }
+                else
+                {
+                    invalid();
+                    printf("row:%d col:%d\t Expected: ;", t[c - 1].r, t[c - 1].c);
+                    exit(0);
+                }
+            }
+            else
+            {
+                invalid();
+                printf("row:%d col:%d\t Expected: ;", t[c - 1].r, t[c - 1].c);
+                exit(0);
+            }
+        }
+        else
+        {
+            invalid();
+            printf("row:%d col:%d\t Expected: (", t[c - 1].r, t[c - 1].c);
+            exit(0);
+        }
+    }
+    else
+    {
+        invalid();
+        printf("row:%d col:%d\t Expected: while or for", t[c].r, t[c].c);
+        exit(0);
+    }
+}
+
+char keywords[][50] = {"void", "int", "float", "char", "double", "break", "if", "while", "do", "else", "continue", "for"};
 
 int hash(char buf[])
 {
@@ -673,9 +723,15 @@ TOKEN getnexttoken(FILE *fa)
         }
     }
 
-    if (c == '\n' || c == '\r')
+    if (c == '\n')
     {
         i++;
+        j = 1;
+        temp.name[0] = '\0';
+        return temp;
+    }
+    if (c == '\r')
+    {
         j = 1;
         temp.name[0] = '\0';
         return temp;
@@ -1104,8 +1160,8 @@ TOKEN getnexttoken(FILE *fa)
             j += p;
             return temp;
         }
-
-        strcpy(temp.id, "id");
+        else
+            strcpy(temp.id, "id");
 
         temp.r = i;
         temp.c = j;
