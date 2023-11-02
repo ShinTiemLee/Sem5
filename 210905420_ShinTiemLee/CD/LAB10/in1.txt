@@ -1,0 +1,3 @@
+int arr[5],a;
+char d,ch;
+float f;
